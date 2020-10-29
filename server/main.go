@@ -5,28 +5,30 @@ import (
 	"log"
 	"net"
 
-	pb "github.com/dev-sota/golang-grpc-example/helloworld"
+	"github.com/dev-sota/golang-grpc-example/pinger"
 	"google.golang.org/grpc"
-)
-
-const (
-	port = ":50051"
 )
 
 type server struct{}
 
-func (s *server) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
-	log.Printf("New Request: %v", req.String())
-	return &pb.HelloReply{Message: "Hello, " + req.Name + "!"}, nil
-}
-func main() {
-	lis, err := net.Listen("tcp", port)
-	if err != nil {
-		log.Fatalf("boo")
+func (s *server) Ping(ctx context.Context, req *pinger.Request) (*pinger.Pong, error) {
+	res := &pinger.Pong{
+		Message: "pong",
 	}
-	s := grpc.NewServer()
-	pb.RegisterGreeterServer(s, &server{})
-	if err := s.Serve(lis); err != nil {
+	log.Printf("New Request: %v", req.Message)
+	return res, nil
+}
+
+func main() {
+	listener, err := net.Listen("tcp", ":5300")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	grpcSrv := grpc.NewServer()
+	pinger.RegisterPingerServer(grpcSrv, &server{})
+	log.Printf("Pinger service is running")
+	err = grpcSrv.Serve(listener)
+	if err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }

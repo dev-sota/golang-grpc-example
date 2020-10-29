@@ -2,27 +2,29 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"os"
 
-	pb "github.com/dev-sota/golang-grpc-example/helloworld"
+	"github.com/dev-sota/golang-grpc-example/pinger"
 	"google.golang.org/grpc"
 )
 
-const (
-	port = ":50051"
-)
-
 func main() {
-	conn, err := grpc.Dial(port, grpc.WithInsecure())
+	conn, err := grpc.Dial(":5300", grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		fmt.Fprintf(os.Stderr, "grpc.Dial: %v\n", err)
+		return
 	}
 	defer conn.Close()
-	c := pb.NewGreeterClient(conn)
 
-	res, err := c.SayHello(context.Background(), &pb.HelloRequest{Name: "dev-sota"})
-	if err != nil {
-		log.Fatalf("RPC error: %v", err)
+	client := pinger.NewPingerClient(conn)
+	req := &pinger.Request{
+		Message: "ping",
 	}
-	log.Printf("Greeting: %s", res.Message)
+	res, err := client.Ping(context.Background(), req)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Ping: %v\n", err)
+		return
+	}
+	fmt.Fprintf(os.Stdout, "Response: %s\n", res.Message)
 }
